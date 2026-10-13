@@ -3,10 +3,20 @@
 #include "obd2_pids.hpp"
 
 #include <array>
+#include <chrono>
 #include <string>
 
 namespace CANSPI
 {
+    struct CanSpiFrame
+    {
+        uint32_t id = 0U;
+        bool extended = false;
+        bool remoteRequest = false;
+        uint8_t dataLength = 0U;
+        std::array<uint8_t, 8> data{};
+    };
+
     class CanSpiSocket
     {
     public:
@@ -32,6 +42,14 @@ namespace CANSPI
          * @return True when the CAN SPI socket interface is active.
          */
         bool IsOpen() const noexcept;
+
+        /**
+         * @brief Receive a CAN frame from the socket with an optional timeout.
+         * @param frame [out] The frame to receive.
+         * @param timeout Optional timeout duration for receiving the frame. Default is zero (no timeout).
+         * @return True if the frame was received successfully, false otherwise.
+         */
+        bool Receive(CanSpiFrame& frame, std::chrono::milliseconds timeout = std::chrono::milliseconds{0}) const;
 
     private:
         /// Linux file descriptor for the CAN SPI connection. Set to -1 when closed or uninitialized.

@@ -5,6 +5,7 @@
 #include <iostream>
 #include <net/if.h>
 #include <sys/ioctl.h>
+#include <sys/select.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -81,4 +82,50 @@ namespace CANSPI
         return fd_ >= 0;
     }
 
+    bool CanSpiSocket::Receive(CanSpiFrame& frame, std::chrono::milliseconds timeout) const
+    {
+        if (!IsOpen())
+        {
+            return false;
+        }
+
+        if (timeout > std::chrono::milliseconds::zero())
+        {
+            // block until SocketCAN file descriptor becomes readable, but only until timeout.
+            fd_set readFds{};
+            FD_ZERO(&readFds);
+            FD_SET(fd_, &readFds);
+
+            // convert milliseconds to timeval
+            timeval tv{};
+            tv.tv_sec = static_cast<long>(timeout.count() / 1000);
+            tv.tv_usec = static_cast<long>((timeout.count() % 1000) * 1000);
+
+            const int result = select(fd_ + 1, &readFds, nullptr, nullptr, &tv);
+            // zero: timed out. negative: failed.
+            if (result <= 0)
+            {
+                return false;
+            }
+        }
+
+        struct can_frame raw{};
+        const auto bytesRead = ::read(fd_, &raw, sizeof(raw));
+        if (bytesRead != static_cast<ssize_t>(sizeof(raw)))
+        {
+            return false;
+        }
+
+        frame.id = raw.can_id & CAN_EFF_MASK;
+        frame.extended = (raw.can_id & CAN_EFF_FLAG) != 0U;
+        frame.remoteRequest = (raw.can_id & CAN_RTR_FLAG) != 0U;
+        frame.dataLength = raw.can_dlc;
+        frame.data.fill(0U);
+        for (std::size_t i = 0; i < static_cast<std::size_t>(raw.can_dlc); ++i)
+        {
+            frame.data[i] = raw.data[i];
+        }
+
+        return true;
+    }
 }
