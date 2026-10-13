@@ -5,6 +5,7 @@
 #include <iostream>
 #include <net/if.h>
 #include <sys/ioctl.h>
+#include <sys/select.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -81,4 +82,47 @@ namespace CANSPI
         return fd_ >= 0;
     }
 
+    bool CanSpiSocket::Receive(CanSpiFrame& frame, std::chrono::milliseconds timeout) const
+    {
+        if (!IsOpen())
+        {
+            return false;
+        }
+
+        if (timeout > std::chrono::milliseconds::zero())
+        {
+            fd_set read_fds{};
+            FD_ZERO(&read_fds);
+            FD_SET(fd_, &read_fds);
+
+            timeval tv{};
+            tv.tv_sec = static_cast<long>(timeout.count() / 1000);
+            tv.tv_usec = static_cast<long>((timeout.count() % 1000) * 1000);
+
+            const int select_result = select(fd_ + 1, &read_fds, nullptr, nullptr, &tv);
+            if (select_result <= 0)
+            {
+                return false;
+            }
+        }
+
+        struct can_frame raw{};
+        const auto bytes_read = ::read(fd_, &raw, sizeof(raw));
+        if (bytes_read != static_cast<ssize_t>(sizeof(raw)))
+        {
+            return false;
+        }
+
+        frame.id = raw.can_id & CAN_EFF_MASK;
+        frame.extended = (raw.can_id & CAN_EFF_FLAG) != 0U;
+        frame.remote = (raw.can_id & CAN_RTR_FLAG) != 0U;
+        frame.dataLength = raw.can_dlc;
+        frame.data.fill(0U);
+        for (std::size_t i = 0; i < static_cast<std::size_t>(raw.can_dlc); ++i)
+        {
+            frame.data[i] = raw.data[i];
+        }
+
+        return true;
+    }
 }
