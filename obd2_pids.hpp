@@ -16,15 +16,25 @@ namespace CANSPI
      */
     enum class Obd2ProcID : uint8_t
     {
+        /// Hex: 05
         EngineCoolantTemperature = 0x05,
+        /// Hex: 11
         ThrottlePosition = 0x11,
+        /// Hex: 0C
         EngineRPM = 0x0C,
+        /// Hex: 0D
         VehicleSpeed = 0x0D,
+        /// Hex: 0F
         IntakeAirTemperature = 0x0F,
+        /// Hex: 1F
         EngineRuntimeSinceStart = 0x1F,
+        /// Hex: 2F
         FuelLevel = 0x2F,
+        /// Hex: 45
         RelativeThrottlePosition = 0x45,
+        /// Hex: 5C
         EngineOilTemperature = 0x5C,
+        /// Hex: A6
         Odometer = 0xA6
     };
 
