@@ -44,6 +44,13 @@ namespace CANSPI
         bool IsOpen() const noexcept;
 
         /**
+         * @brief Send a CAN frame through the socket.
+         * @param frame The frame to send.
+         * @return True if the frame was sent successfully, false otherwise.
+         */
+        bool Send(const CanSpiFrame& frame) const;
+
+        /**
          * @brief Receive a CAN frame from the socket with an optional timeout.
          * @param frame [out] The frame to receive.
          * @param timeout Optional timeout duration for receiving the frame. Default is zero (no timeout).

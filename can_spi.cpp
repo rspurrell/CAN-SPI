@@ -82,6 +82,34 @@ namespace CANSPI
         return fd_ >= 0;
     }
 
+    bool CanSpiSocket::Send(const CanSpiFrame& frame) const
+    {
+        if (!IsOpen())
+        {
+            return false;
+        }
+
+        struct can_frame raw{};
+        raw.can_id = frame.id;
+        if (frame.extended)
+        {
+            raw.can_id |= CAN_EFF_FLAG;
+        }
+        if (frame.remote)
+        {
+            raw.can_id |= CAN_RTR_FLAG;
+        }
+        raw.can_dlc = frame.dataLength;
+        std::memset(raw.data, 0, sizeof(raw.data));
+        for (std::size_t i = 0; i < frame.dataLength; ++i)
+        {
+            raw.data[i] = frame.data[i];
+        }
+
+        const auto bytes_written = ::write(fd_, &raw, sizeof(raw));
+        return bytes_written == static_cast<ssize_t>(sizeof(raw));
+    }
+
     bool CanSpiSocket::Receive(CanSpiFrame& frame, std::chrono::milliseconds timeout) const
     {
         if (!IsOpen())

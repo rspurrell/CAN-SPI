@@ -130,10 +130,10 @@ TEST_F(CANSPI_IntegrationTest, DISABLED_ShouldReceiveThrottlePositionCanFrame)
     // Use with cansend can0 7E8#030111FF00000000
     //
     CANSPI::CanSpiSocket socket{CANSPI_IntegrationTest::kCanInterface};
-    ASSERT_EQ(true, socket.Open());
+    ASSERT_TRUE(socket.Open());
 
     CANSPI::CanSpiFrame frame{};
-    ASSERT_EQ(true, socket.Receive(frame, std::chrono::milliseconds{10000}));
+    ASSERT_TRUE(socket.Receive(frame, std::chrono::milliseconds{10000}));
     socket.Close();
 
     EXPECT_EQ(frame.id, 0x7E8U);
@@ -150,16 +150,16 @@ TEST_F(CANSPI_IntegrationTest, DISABLED_ShouldReceiveThrottlePositionCanFrame)
     EXPECT_EQ(100.0, actual);
 }
 
-TEST_F(CANSPI_IntegrationTest, ShouldReceiveOdometerCanFrame)
+TEST_F(CANSPI_IntegrationTest, DISABLED_ShouldReceiveOdometerCanFrame)
 {
     //
     // Use with cansend can0 7E8#0601A6FFFFFFFF00
     //
     CANSPI::CanSpiSocket socket{CANSPI_IntegrationTest::kCanInterface};
-    ASSERT_EQ(true, socket.Open());
+    ASSERT_TRUE(socket.Open());
 
     CANSPI::CanSpiFrame frame{};
-    ASSERT_EQ(true, socket.Receive(frame, std::chrono::milliseconds{10000}));
+    ASSERT_TRUE(socket.Receive(frame, std::chrono::milliseconds{10000}));
     socket.Close();
 
     EXPECT_EQ(frame.id, 0x7E8U);
@@ -176,4 +176,17 @@ TEST_F(CANSPI_IntegrationTest, ShouldReceiveOdometerCanFrame)
 
     const double expected = 429496729.5;
     EXPECT_EQ(expected, actual);
+}
+
+TEST_F(CANSPI_IntegrationTest, ShouldSendThrottlePositionRequest)
+{
+    CANSPI::CanSpiSocket socket{CANSPI_IntegrationTest::kCanInterface};
+    CANSPI::CanSpiFrame frame{
+        .id = 0x7DFU,
+        .dataLength = 8U,
+        .data = std::array<uint8_t, 8> { 2U, 1U, static_cast<uint8_t>(CANSPI::Obd2ProcID::ThrottlePosition) }
+    };
+    ASSERT_TRUE(socket.Open());
+    EXPECT_TRUE(socket.Send(frame));
+    socket.Close();
 }
