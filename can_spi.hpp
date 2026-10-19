@@ -17,6 +17,14 @@ namespace CANSPI
         std::array<uint8_t, 8> data{};
     };
 
+    /**
+     * @brief Represents a CAN SPI socket for communication with a CAN bus.
+     * @details This class provides an interface for sending and receiving CAN frames over a CAN bus
+     *          using the SocketCAN interface on Linux. It allows for opening a socket, sending
+     *          frames, receiving frames, and managing the socket's state.
+     * @note This class is designed to be used in applications that require communication with a CAN
+     *       bus, such as automotive diagnostics.
+     */
     class CanSpiSocket
     {
     public:
