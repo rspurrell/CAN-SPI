@@ -1,6 +1,7 @@
 #pragma once
 
 #include "obd2_pids.hpp"
+#include "state_model.hpp"
 
 #include <array>
 #include <chrono>
@@ -66,11 +67,27 @@ namespace CANSPI
          */
         bool Receive(CanSpiFrame& frame, std::chrono::milliseconds timeout = std::chrono::milliseconds{0}) const;
 
+        /**
+         * @brief Decode a received CAN Bus frame and update the state model snapshot.
+         * @param frame The received CAN frame.
+         * @return True if the frame contains a supported Mode 01 response.
+         */
+        bool ProcessFrame(const CanSpiFrame& frame);
+
+        /**
+         * @brief Return a snapshot of the current CAN Bus state model.
+         * @return A consistent copy of the latest responder's state, or a default state.
+         */
+        StateModel GetSnapshot() const;
+
     private:
         /// Linux file descriptor for the CAN SPI connection. Set to -1 when closed or uninitialized.
         int fd_ = -1;
 
         /// Name of the CAN SPI interface to use (e.g., "can0"). Default is "can0".
         std::string ifName_ = "can0";
+
+        /// Manages a thread-safe CAN Bus state model.
+        StateModelManager canState_{};
     };
 }

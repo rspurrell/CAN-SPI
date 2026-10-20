@@ -156,4 +156,41 @@ namespace CANSPI
 
         return true;
     }
+
+    bool CanSpiSocket::ProcessFrame(const CanSpiFrame& frame)
+    {
+        if (frame.extended // reject extended frames (for now)
+            || frame.remoteRequest // reject remote request frames
+            || frame.id < 0x7E8U || frame.id > 0x7EFU // reject frame resopnse IDs outside of standard range
+            || frame.dataLength < 4U || frame.dataLength > frame.data.size() // reject invalid data lengths
+        )
+        {
+            return false;
+        }
+
+        const uint8_t payloadLength = frame.data[0] & 0x0FU; // lower nibble contains byte payload length
+        if ((frame.data[0] & 0xF0U) != 0U // reject non-zero upper nibble
+            || payloadLength < 3U || payloadLength > frame.dataLength - 1U // reject invalid payload lengths
+            || frame.data[1] != 0x41U // process only OBD2 mode 1 service responses (for now)
+        )
+        {
+            return false;
+        }
+
+        const auto pid = static_cast<Obd2ProcID>(frame.data[2]);
+        const auto* pidInfo = GetObd2PidInfo(pid);
+        if (pidInfo == nullptr)
+        {
+            return false;
+        }
+
+        const double value = pidInfo->convert(frame.data);
+        canState_.Update(pid, value);
+        return true;
+    }
+
+    StateModel CanSpiSocket::GetSnapshot() const
+    {
+        return canState_.GetSnapshot();
+    }
 }
