@@ -4,8 +4,10 @@
 #include "state_model.hpp"
 
 #include <array>
+#include <atomic>
 #include <chrono>
 #include <string>
+#include <thread>
 
 namespace CANSPI
 {
@@ -80,7 +82,24 @@ namespace CANSPI
          */
         StateModel GetSnapshot() const;
 
+        /**
+         * @brief Start the background worker to receive and process CAN Bus frames.
+         * @param timeout Optional timeout for each receive operation. Zero (default) waits indefinitely.
+         * @return True if the worker was started successfully, false otherwise.
+         */
+        bool BeginReceiveAsync(std::chrono::milliseconds timeout = std::chrono::milliseconds{0});
+
+        /** @brief Stop the background receive worker and wait for it to finish. */
+        void EndRecieveAsync();
+
     private:
+        /**
+         * @brief Receive frames continuously, processes recognized OBD2 responses, and updates
+         *        CAN Bus state model via global state model manager.
+         * @details Called from BeginReceiveAsync on worker thread. Operates until EndReceiveAsync is called.
+         */
+        void ReceiveAsync(std::chrono::milliseconds timeout);
+
         /// Linux file descriptor for the CAN SPI connection. Set to -1 when closed or uninitialized.
         int fd_ = -1;
 
@@ -89,5 +108,11 @@ namespace CANSPI
 
         /// Manages a thread-safe CAN Bus state model.
         StateModelManager canState_{};
+
+        /// Signals the background receive worker to stop.
+        std::atomic<bool> stopWorker_{true};
+
+        /// Library-owned async worker that receives and processes CAN frames.
+        std::thread worker_;
     };
 }

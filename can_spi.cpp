@@ -70,6 +70,8 @@ namespace CANSPI
 
     void CanSpiSocket::Close() noexcept
     {
+        EndRecieveAsync();
+
         if (fd_ >= 0)
         {
             ::close(fd_);
@@ -192,5 +194,42 @@ namespace CANSPI
     StateModel CanSpiSocket::GetSnapshot() const
     {
         return canState_.GetSnapshot();
+    }
+
+    bool CanSpiSocket::BeginReceiveAsync(std::chrono::milliseconds timeout)
+    {
+        if (!IsOpen())
+        {
+            return false;
+        }
+        if (worker_.joinable())
+        {
+            // worker is already started
+            return true;
+        }
+        stopWorker_.store(false, std::memory_order_release);
+        worker_ = std::thread(&CanSpiSocket::ReceiveAsync, this, timeout);
+        return true;
+    }
+
+    void CanSpiSocket::EndRecieveAsync()
+    {
+        stopWorker_.store(true, std::memory_order_release);
+        if (worker_.joinable())
+        {
+            worker_.join();
+        }
+    }
+
+    void CanSpiSocket::ReceiveAsync(std::chrono::milliseconds timeout)
+    {
+        while (!stopWorker_.load(std::memory_order_acquire))
+        {
+            CanSpiFrame frame{};
+            if (Receive(frame, timeout))
+            {
+                ProcessFrame(frame);
+            }
+        }
     }
 }
