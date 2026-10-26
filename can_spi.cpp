@@ -38,7 +38,6 @@ namespace CANSPI
         fd_ = ::socket(PF_CAN, SOCK_RAW, CAN_RAW);
         if (fd_ < 0)
         {
-            std::cerr << "Failed to open CAN socket: " << std::strerror(errno) << std::endl;
             return false;
         }
 
@@ -48,8 +47,9 @@ namespace CANSPI
 
         if (ioctl(fd_, SIOCGIFINDEX, &ifr) < 0)
         {
-            std::cerr << "Failed to resolve CAN interface '" << ifName_ << "': " << std::strerror(errno) << std::endl;
+            int saved_errno = errno;
             Close();
+            errno = saved_errno;
             return false;
         }
 
@@ -60,8 +60,9 @@ namespace CANSPI
 
         if (::bind(fd_, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) < 0)
         {
-            std::cerr << "Failed to bind CAN socket to '" << ifName_ << "': " << std::strerror(errno) << std::endl;
+            int saved_errno = errno;
             Close();
+            errno = saved_errno;
             return false;
         }
 
