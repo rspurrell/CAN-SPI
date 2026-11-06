@@ -85,6 +85,24 @@ namespace CANSPI
         return fd_ >= 0;
     }
 
+    bool CanSpiSocket::Broadcast(Obd2ProcID pid) const
+    {
+        return Send(kBroadcast, false, false, kServiceId, static_cast<uint8_t>(pid));
+    }
+
+    bool CanSpiSocket::Send(uint32_t id, bool extended, bool remoteRequest, uint8_t serviceId, uint8_t pid) const
+    {
+        CanSpiFrame frame{};
+        frame.id = id;
+        frame.extended = extended;
+        frame.remoteRequest = remoteRequest;
+        frame.dataLength = 8U; // OBD2 request frames are always 8 bytes long
+        frame.data[0] = 2U; // OBD2 request frames always have a payload length of 2 bytes
+        frame.data[1] = serviceId; // OBD2 service ID (e.g., 0x01 for current data)
+        frame.data[2] = pid; // OBD2 PID
+        return Send(frame);
+    }
+
     bool CanSpiSocket::Send(const CanSpiFrame& frame) const
     {
         if (!IsOpen())

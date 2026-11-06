@@ -11,6 +11,12 @@
 
 namespace CANSPI
 {
+    /// OBD2 Mode 01: Current Data
+    inline constexpr uint8_t kServiceId = 0x01U;
+
+    /// CAN Bus Broadcast ID
+    inline constexpr uint32_t kBroadcast = 0x7DFU;
+
     struct CanSpiFrame
     {
         uint32_t id = 0U;
@@ -53,6 +59,24 @@ namespace CANSPI
          * @return True when the CAN SPI socket interface is active.
          */
         bool IsOpen() const noexcept;
+
+        /**
+         * @brief Broadcast a CAN frame request.
+         * @param pid A OBD2 process ID.
+         * @return True if the frame was sent successfully, false otherwise.
+         */
+        bool Broadcast(Obd2ProcID pid) const;
+
+        /**
+         * @brief Send a CAN frame with the specified parameters.
+         * @param id The CAN ID of the frame.
+         * @param extended Whether the frame is an extended frame (29-bit ID).
+         * @param remoteRequest Whether the frame is a remote request frame.
+         * @param serviceId The OBD2 service ID (e.g., 0x01 for current data).
+         * @param pid The OBD2 process ID corresponding to the value.
+         * @return True if the frame was sent successfully, false otherwise.
+         */
+        bool Send(uint32_t id, bool extended, bool remoteRequest, uint8_t serviceId, uint8_t pid) const;
 
         /**
          * @brief Send a CAN frame through the socket.
