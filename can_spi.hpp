@@ -40,7 +40,7 @@ namespace CANSPI
         /** @brief Constructs a CAN SPI socket through the can0 interface.*/
         CanSpiSocket() = default;
         /** @brief Constructs a CAN SPI socket through the specified interface. */
-        explicit CanSpiSocket(std::string interfaceName);
+        explicit CanSpiSocket(std::string interfaceName, bool passive = false);
         ~CanSpiSocket();
 
         /**
@@ -82,6 +82,7 @@ namespace CANSPI
          * @brief Send a CAN frame through the socket.
          * @param frame The frame to send.
          * @return True if the frame was sent successfully, false otherwise.
+         * @note If CanSpiSocket is in passive mode then Send will always return false.
          */
         bool Send(const CanSpiFrame& frame) const;
 
@@ -129,6 +130,9 @@ namespace CANSPI
 
         /// Name of the CAN SPI interface to use (e.g., "can0"). Default is "can0".
         std::string ifName_ = "can0";
+
+        /// Indicates whether the CAN Bus is operating in a passive or active state. Default is false.
+        const bool passive_{false};
 
         /// Manages a thread-safe CAN Bus state model.
         StateModelManager canState_{};

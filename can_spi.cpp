@@ -14,8 +14,8 @@
 
 namespace CANSPI
 {
-    CanSpiSocket::CanSpiSocket(std::string interfaceName)
-        : ifName_(std::move(interfaceName))
+    CanSpiSocket::CanSpiSocket(std::string interfaceName, bool passive)
+        : ifName_(std::move(interfaceName)), canState_(StateModelManager{passive}), passive_{passive}
     {
         if (ifName_.empty())
         {
@@ -107,6 +107,13 @@ namespace CANSPI
     {
         if (!IsOpen())
         {
+            return false;
+        }
+
+        if (passive_)
+        {
+            // Do not allow a send operation when in passive mode.
+            errno = EOPNOTSUPP;
             return false;
         }
 
